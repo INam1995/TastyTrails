@@ -201,7 +201,7 @@ const imageToGithub = async (fileImage, name, unique) => {
  */
 const getOneUserRecipes = async (req, res)=>{
   try{
-    const recipes = await Recipe.find({user: req.body.id});
+       const recipes = await Recipe.find({user: { $eq: req.body.id }});
     return res.status(200).json({success: true, recipes})
   }catch(error){
    console.log(error);
@@ -227,7 +227,7 @@ const updateRecipe = async (req, res)=>{
           author,
           type
         }
-        const update = await Recipe.updateOne({_id: id}, {$set: data}, {new:true})
+         const update = await Recipe.updateOne({_id: { $eq: id }}, {$set: data}, {new:true})
         return res.status(200).json({success: true, message: "Recipe Updates Successfully"})
   }catch(error){
     console.log(error);
@@ -242,7 +242,7 @@ const updateRecipe = async (req, res)=>{
  */
 const deleteRecipe = async (req, res) => {
   try {
-    const recipe = await Recipe.findById(req.body.id);
+    const recipe = await Recipe.findOne({ _id: { $eq: req.body.id } });
 
     if (!recipe) {
       return res.status(404).json({ success: false, message: "Recipe not found" });
@@ -308,7 +308,11 @@ const deleteRecipe = async (req, res) => {
    
 
     // If successful, delete the recipe from the database
-    await Recipe.deleteOne({ _id: req.body.id });
+      const id = req.body.id;
+     if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid ID format" });
+    }
+    await Recipe.deleteOne({ _id: { $eq: id } });
 
     return res.status(200).json({ success: true, message: "Recipe Deleted Successfully" });
   } catch (error) {
@@ -330,7 +334,10 @@ const addComment = async (req, res) => {
     const { recipeId, username, content } = req.body;
 
     // Ensure the recipe exists
-    const recipe = await Recipe.findById(recipeId);
+    if (typeof recipeId !== "string") {
+       return res.status(400).json({ success: false, message: "Invalid recipe ID" });
+    }
+    const recipe = await Recipe.findById({ _id: { $eq: recipeId } });
     if (!recipe) {
       return res.status(404).json({ success: false, message: "Recipe not found" });
     }
